@@ -1,0 +1,26 @@
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# --- Settings & validation ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# --- Database ---
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# --- Auth ---
+passlib==1.7.4
+# Pinned below passlib's last release (2020): bcrypt>=4.1 removed the __about__
+# attribute passlib's backend detection reads, and also hard-rejects passwords over
+# 72 bytes instead of silently truncating — passlib's own self-test hits that and
+# crashes. 4.0.1 is the newest release still compatible. See DECISIONS.md ADR-008.
+bcrypt==4.0.1
+pyjwt==2.10.1
+
+# --- AI provider ---
+openai==1.59.6

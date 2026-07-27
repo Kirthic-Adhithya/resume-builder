@@ -31,8 +31,8 @@ export function HomePage() {
           <Button onClick={() => window.location.reload()}>Re-check</Button>
           <div className="flex justify-center gap-4 text-sm">
             {isAuthenticated ? (
-              <Link to="/account" className="underline">
-                Account
+              <Link to="/dashboard" className="underline">
+                Dashboard
               </Link>
             ) : (
               <>

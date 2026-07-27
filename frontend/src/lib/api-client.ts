@@ -24,5 +24,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     throw new Error(`API error ${response.status}: ${await response.text()}`)
   }
 
+  if (response.status === 204) {
+    // No Content — there's no body to parse (DELETE endpoints return this).
+    return undefined as T
+  }
+
   return response.json() as Promise<T>
 }

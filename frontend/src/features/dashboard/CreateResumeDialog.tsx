@@ -21,10 +21,18 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useCreateResume } from '@/features/dashboard/api'
 
 const createResumeSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
+  template: z.enum(['blank', 'simple']),
 })
 
 type CreateResumeValues = z.infer<typeof createResumeSchema>
@@ -34,11 +42,11 @@ export function CreateResumeDialog() {
   const createResume = useCreateResume()
   const form = useForm<CreateResumeValues>({
     resolver: zodResolver(createResumeSchema),
-    defaultValues: { title: '' },
+    defaultValues: { title: '', template: 'blank' },
   })
 
   function onSubmit(values: CreateResumeValues) {
-    createResume.mutate(values.title, {
+    createResume.mutate(values, {
       onSuccess: () => {
         setOpen(false)
         form.reset()
@@ -66,6 +74,27 @@ export function CreateResumeDialog() {
                   <FormControl>
                     <Input autoFocus {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="template"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Template</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="blank">Blank</SelectItem>
+                      <SelectItem value="simple">Simple resume</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

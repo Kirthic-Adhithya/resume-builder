@@ -7,6 +7,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
+import { EditorPage } from '@/features/editor/EditorPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/dashboard', element: <DashboardPage /> },
       { path: '/account', element: <AccountPage /> },
+      { path: '/resumes/:id', element: <EditorPage /> },
     ],
   },
 ])

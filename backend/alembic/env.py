@@ -14,7 +14,12 @@ from app.infrastructure.database.base import Base
 
 # Import every ORM model module here so Base.metadata is fully populated before
 # autogenerate compares it against the live database schema.
-from app.infrastructure.database.models import resume, user  # noqa: E402, F401
+from app.infrastructure.database.models import (  # noqa: E402, F401
+    chat_message,
+    resume,
+    resume_version,
+    user,
+)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", get_settings().database_url)

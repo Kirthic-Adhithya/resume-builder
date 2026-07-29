@@ -20,8 +20,11 @@ export function useResumes(search: string, page: number, pageSize = 10) {
 export function useCreateResume() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (title: string) =>
-      apiFetch<Resume>('/api/v1/resumes', { method: 'POST', body: JSON.stringify({ title }) }),
+    mutationFn: ({ title, template }: { title: string; template: string }) =>
+      apiFetch<Resume>('/api/v1/resumes', {
+        method: 'POST',
+        body: JSON.stringify({ title, template }),
+      }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: RESUMES_KEY }),
   })
 }

@@ -1,22 +1,36 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
-from app.application.interfaces.repositories import ResumeRepository
+from app.application.interfaces.compiler import LatexCompiler
+from app.application.interfaces.repositories import ResumeRepository, ResumeVersionRepository
+from app.application.use_cases.compile_resume import CompileResume
 from app.application.use_cases.create_resume import CreateResume
 from app.application.use_cases.delete_resume import DeleteResume
+from app.application.use_cases.delete_resume_version import DeleteResumeVersion
 from app.application.use_cases.duplicate_resume import DuplicateResume
+from app.application.use_cases.get_resume import GetResume
+from app.application.use_cases.list_resume_versions import ListResumeVersions
 from app.application.use_cases.list_resumes import ListResumes
-from app.application.use_cases.rename_resume import RenameResume
+from app.application.use_cases.restore_resume_version import RestoreResumeVersion
+from app.application.use_cases.update_resume import UpdateResume
 from app.domain.entities.resume import Resume
+from app.domain.entities.resume_version import ResumeVersion
 from app.domain.entities.user import User
-from app.presentation.dependencies import get_current_user, get_resume_repository
+from app.presentation.dependencies import (
+    get_current_user,
+    get_latex_compiler,
+    get_resume_repository,
+    get_resume_version_repository,
+)
 from app.presentation.schemas.resume import (
     ResumeCreateRequest,
+    ResumeDetailResponse,
     ResumeListResponse,
-    ResumeRenameRequest,
     ResumeResponse,
+    ResumeUpdateRequest,
+    ResumeVersionResponse,
 )
 
 router = APIRouter(prefix="/resumes", tags=["resumes"])
@@ -28,7 +42,7 @@ async def create_resume(
     current_user: Annotated[User, Depends(get_current_user)],
     resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
 ) -> Resume:
-    return await CreateResume(resume_repo).execute(current_user.id, data.title)
+    return await CreateResume(resume_repo).execute(current_user.id, data.title, data.template)
 
 
 @router.get("", response_model=ResumeListResponse)
@@ -48,14 +62,26 @@ async def list_resumes(
     )
 
 
-@router.patch("/{resume_id}", response_model=ResumeResponse)
-async def rename_resume(
+@router.get("/{resume_id}", response_model=ResumeDetailResponse)
+async def get_resume(
     resume_id: uuid.UUID,
-    data: ResumeRenameRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
 ) -> Resume:
-    return await RenameResume(resume_repo).execute(current_user.id, resume_id, data.title)
+    return await GetResume(resume_repo).execute(current_user.id, resume_id)
+
+
+@router.patch("/{resume_id}", response_model=ResumeDetailResponse)
+async def update_resume(
+    resume_id: uuid.UUID,
+    data: ResumeUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
+    version_repo: Annotated[ResumeVersionRepository, Depends(get_resume_version_repository)],
+) -> Resume:
+    return await UpdateResume(resume_repo, version_repo).execute(
+        current_user.id, resume_id, data.title, data.content
+    )
 
 
 @router.post(
@@ -76,3 +102,50 @@ async def delete_resume(
     resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
 ) -> None:
     await DeleteResume(resume_repo).execute(current_user.id, resume_id)
+
+
+@router.post("/{resume_id}/compile")
+async def compile_resume(
+    resume_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
+    compiler: Annotated[LatexCompiler, Depends(get_latex_compiler)],
+) -> Response:
+    pdf_bytes = await CompileResume(resume_repo, compiler).execute(current_user.id, resume_id)
+    return Response(content=pdf_bytes, media_type="application/pdf")
+
+
+@router.get("/{resume_id}/versions", response_model=list[ResumeVersionResponse])
+async def list_resume_versions(
+    resume_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
+    version_repo: Annotated[ResumeVersionRepository, Depends(get_resume_version_repository)],
+) -> list[ResumeVersion]:
+    return await ListResumeVersions(resume_repo, version_repo).execute(current_user.id, resume_id)
+
+
+@router.post("/{resume_id}/versions/{version_id}/restore", response_model=ResumeDetailResponse)
+async def restore_resume_version(
+    resume_id: uuid.UUID,
+    version_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
+    version_repo: Annotated[ResumeVersionRepository, Depends(get_resume_version_repository)],
+) -> Resume:
+    return await RestoreResumeVersion(resume_repo, version_repo).execute(
+        current_user.id, resume_id, version_id
+    )
+
+
+@router.delete("/{resume_id}/versions/{version_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_resume_version(
+    resume_id: uuid.UUID,
+    version_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
+    version_repo: Annotated[ResumeVersionRepository, Depends(get_resume_version_repository)],
+) -> None:
+    await DeleteResumeVersion(resume_repo, version_repo).execute(
+        current_user.id, resume_id, version_id
+    )

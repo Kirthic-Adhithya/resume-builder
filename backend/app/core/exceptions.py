@@ -37,6 +37,13 @@ class ForbiddenError(AppError):
     status_code = status.HTTP_403_FORBIDDEN
 
 
+class CompilationError(AppError):
+    """The LaTeX source itself failed to compile — a client-input problem, not a
+    server error, hence 422 rather than 500."""
+
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:

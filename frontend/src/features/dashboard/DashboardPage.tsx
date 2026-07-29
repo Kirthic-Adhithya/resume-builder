@@ -1,5 +1,6 @@
 import { MoreHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import {
   AlertDialog,
@@ -95,7 +96,11 @@ export function DashboardPage() {
           )}
           {data?.items.map((resume) => (
             <TableRow key={resume.id}>
-              <TableCell className="font-medium">{resume.title}</TableCell>
+              <TableCell className="font-medium">
+                <Link to={`/resumes/${resume.id}`} className="hover:underline">
+                  {resume.title}
+                </Link>
+              </TableCell>
               <TableCell className="text-muted-foreground">
                 {new Date(resume.updated_at).toLocaleDateString()}
               </TableCell>

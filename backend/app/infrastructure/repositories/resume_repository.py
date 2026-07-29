@@ -57,6 +57,7 @@ class SqlAlchemyResumeRepository:
         if model is None:
             return
         model.title = resume.title
+        model.content = resume.content
         await self._session.commit()
         await self._session.refresh(model)
         resume.updated_at = model.updated_at

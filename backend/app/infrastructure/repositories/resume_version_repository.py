@@ -61,7 +61,9 @@ class SqlAlchemyResumeVersionRepository:
 
         cutoff = datetime.now(UTC) - timedelta(hours=keep_recent_hours)
         prune_ids = [
-            row.id for index, row in enumerate(rows) if index >= min_keep_count and row.created_at < cutoff
+            row.id
+            for index, row in enumerate(rows)
+            if index >= min_keep_count and row.created_at < cutoff
         ]
 
         if prune_ids:

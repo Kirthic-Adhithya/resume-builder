@@ -24,8 +24,16 @@ class SqlAlchemyUserRepository:
         return self._to_domain(model) if model is not None else None
 
     async def save(self, user: User) -> None:
-        model = UserModel(id=user.id, email=user.email, hashed_password=user.hashed_password)
-        self._session.add(model)
+        # Doubles as create (RegisterUser, always a new id) and update (ChangePassword,
+        # an existing id) — fetch-then-branch instead of always inserting, since always
+        # inserting would violate the primary key on the update path.
+        model = await self._session.get(UserModel, user.id)
+        if model is None:
+            model = UserModel(id=user.id, email=user.email, hashed_password=user.hashed_password)
+            self._session.add(model)
+        else:
+            model.email = user.email
+            model.hashed_password = user.hashed_password
         await self._session.commit()
         await self._session.refresh(model)
         user.created_at = model.created_at

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ChatPanel } from '@/features/chat/ChatPanel'
 import {
+  downloadResumeExport,
   useCompileResume,
   useResumeDetail,
   useResumeVersions,
@@ -124,6 +125,24 @@ export function EditorPage() {
                   {new Date(version.created_at).toLocaleString()}
                 </DropdownMenuItem>
               ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => void downloadResumeExport(id, 'pdf')}>
+                Download PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void downloadResumeExport(id, 'latex')}>
+                Download LaTeX (.tex)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void downloadResumeExport(id, 'json')}>
+                Download JSON backup
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button

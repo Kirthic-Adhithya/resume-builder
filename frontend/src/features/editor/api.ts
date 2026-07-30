@@ -32,6 +32,24 @@ export function useCompileResume(id: string) {
   })
 }
 
+// Not a query/mutation hook — a one-shot action with no state to track. Downloads can't
+// just be an <a href> because the request needs an Authorization header, which a plain
+// link can't send — so we fetch the file as a blob ourselves and trigger the save
+// dialog via a throwaway object URL.
+export async function downloadResumeExport(
+  id: string,
+  format: 'pdf' | 'latex' | 'json',
+): Promise<void> {
+  const extension = format === 'latex' ? 'tex' : format
+  const blob = await apiFetchBlob(`/api/v1/resumes/${id}/export/${format}`)
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `resume.${extension}`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 export function useResumeVersions(id: string) {
   return useQuery({
     queryKey: ['resume-versions', id],

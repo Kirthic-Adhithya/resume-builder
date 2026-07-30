@@ -7,9 +7,9 @@
   /* Tells browsers with a "force dark mode for websites" setting (Edge/Chrome both
      ship one) that this page already manages light/dark itself via the .dark class —
      without this, that heuristic repaint can misread our oklch() colors and render
-     the page solid black instead of properly inverting it. Becomes `light dark` once
-     the theme toggle (Settings phase) lets .dark actually get applied. */
-  color-scheme: light;
+     the page solid black instead of properly inverting it. Now `light dark` since the
+     Settings theme toggle actually applies .dark for real. */
+  color-scheme: light dark;
 
   --radius: 0.625rem;
   --background: oklch(1 0 0);

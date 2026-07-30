@@ -29,3 +29,8 @@ class TokenResponse(BaseModel):
 
 class AccountAgeResponse(BaseModel):
     days_since_registration: int
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8)

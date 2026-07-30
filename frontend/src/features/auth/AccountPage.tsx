@@ -1,19 +1,29 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChangePasswordForm } from '@/features/auth/ChangePasswordForm'
 import { useAuth } from '@/features/auth/use-auth'
 
 export function AccountPage() {
   const { user } = useAuth()
 
   return (
-    <div className="p-8">
-      <Card className="w-full max-w-sm">
+    <div className="mx-auto max-w-sm space-y-6 p-8">
+      <Card>
         <CardHeader>
-          <CardTitle>Account</CardTitle>
+          <CardTitle>Profile</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
             Logged in as <span className="font-medium text-foreground">{user?.email}</span>
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Change password</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChangePasswordForm />
         </CardContent>
       </Card>
     </div>

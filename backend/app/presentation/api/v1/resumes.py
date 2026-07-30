@@ -1,3 +1,4 @@
+import json
 import uuid
 from typing import Annotated
 
@@ -113,6 +114,56 @@ async def compile_resume(
 ) -> Response:
     pdf_bytes = await CompileResume(resume_repo, compiler).execute(current_user.id, resume_id)
     return Response(content=pdf_bytes, media_type="application/pdf")
+
+
+@router.get("/{resume_id}/export/pdf")
+async def export_pdf(
+    resume_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
+    compiler: Annotated[LatexCompiler, Depends(get_latex_compiler)],
+) -> Response:
+    pdf_bytes = await CompileResume(resume_repo, compiler).execute(current_user.id, resume_id)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{resume_id}.pdf"'},
+    )
+
+
+@router.get("/{resume_id}/export/latex")
+async def export_latex(
+    resume_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
+) -> Response:
+    resume = await GetResume(resume_repo).execute(current_user.id, resume_id)
+    return Response(
+        content=resume.content,
+        media_type="text/x-tex",
+        headers={"Content-Disposition": f'attachment; filename="{resume_id}.tex"'},
+    )
+
+
+@router.get("/{resume_id}/export/json")
+async def export_json(
+    resume_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
+) -> Response:
+    resume = await GetResume(resume_repo).execute(current_user.id, resume_id)
+    payload = {
+        "id": str(resume.id),
+        "title": resume.title,
+        "content": resume.content,
+        "created_at": resume.created_at.isoformat(),
+        "updated_at": resume.updated_at.isoformat(),
+    }
+    return Response(
+        content=json.dumps(payload, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{resume_id}.json"'},
+    )
 
 
 @router.get("/{resume_id}/versions", response_model=list[ResumeVersionResponse])

@@ -3,11 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
     <title>Resume Builder</title>
   </head>
   <body>
     <div id="root"></div>
+    <!-- Applied synchronously, before React mounts, so there's no flash of the wrong
+         theme on load — reading localStorage after mount would paint light then flip. -->
+    <script>
+      if (localStorage.getItem('resume-builder:theme') === 'dark') {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

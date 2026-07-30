@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom'
 
+import { ThemeToggle } from '@/app/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/use-auth'
 
@@ -22,6 +23,7 @@ export function ProtectedLayout() {
         </nav>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>{user?.email}</span>
+          <ThemeToggle />
           <Button variant="outline" size="sm" onClick={logout}>
             Log out
           </Button>

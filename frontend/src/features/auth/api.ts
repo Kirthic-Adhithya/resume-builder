@@ -38,3 +38,10 @@ export function useCurrentUser(enabled: boolean) {
     retry: false,
   })
 }
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (data: { current_password: string; new_password: string }) =>
+      apiFetch<void>('/api/v1/auth/me/password', { method: 'POST', body: JSON.stringify(data) }),
+  })
+}

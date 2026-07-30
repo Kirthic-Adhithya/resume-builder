@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, status
 
 from app.application.interfaces.repositories import UserRepository
 from app.application.interfaces.security import PasswordHasher, TokenService
+from app.application.use_cases.change_password import ChangePassword
 from app.application.use_cases.login_user import LoginUser
 from app.application.use_cases.register_user import RegisterUser
 from app.domain.entities.user import User
@@ -16,6 +17,7 @@ from app.presentation.dependencies import (
 )
 from app.presentation.schemas.auth import (
     AccountAgeResponse,
+    ChangePasswordRequest,
     LoginRequest,
     RegisterRequest,
     TokenResponse,
@@ -58,3 +60,15 @@ async def get_account_age(
 ) -> AccountAgeResponse:
     elapsed = datetime.now(UTC) - current_user.created_at
     return AccountAgeResponse(days_since_registration=elapsed.days)
+
+
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    user_repo: Annotated[UserRepository, Depends(get_user_repository)],
+    password_hasher: Annotated[PasswordHasher, Depends(get_password_hasher)],
+) -> None:
+    await ChangePassword(user_repo, password_hasher).execute(
+        current_user.id, data.current_password, data.new_password
+    )

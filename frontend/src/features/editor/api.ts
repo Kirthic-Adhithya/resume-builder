@@ -28,7 +28,14 @@ export function useUpdateResumeContent(id: string) {
 
 export function useCompileResume(id: string) {
   return useMutation({
-    mutationFn: () => apiFetchBlob(`/api/v1/resumes/${id}/compile`, { method: 'POST' }),
+    // Passing content directly compiles exactly what's in the editor right now, instead
+    // of always compiling whatever was last persisted — that's what lets save and
+    // compile run in parallel instead of compile waiting on save to finish first.
+    mutationFn: (content?: string) =>
+      apiFetchBlob(`/api/v1/resumes/${id}/compile`, {
+        method: 'POST',
+        body: content !== undefined ? JSON.stringify({ content }) : undefined,
+      }),
   })
 }
 

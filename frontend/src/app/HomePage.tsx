@@ -1,52 +1,65 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { FileText, MessageSquare, Target } from 'lucide-react'
+import { Navigate, Link as RouterLink } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/features/auth/use-auth'
-import { apiFetch } from '@/lib/api-client'
 
-// Temporary placeholder route. Exists only to prove the foundation is wired end-to-end
-// (Tailwind + shadcn rendering, TanStack Query talking to the FastAPI backend). Gets
-// replaced by the real landing/dashboard route in Phase 2.
+const FEATURES = [
+  {
+    icon: FileText,
+    title: 'LaTeX editor, live preview',
+    description: 'Write in real LaTeX with a Monaco-powered editor and instant PDF preview.',
+  },
+  {
+    icon: MessageSquare,
+    title: 'AI writing assistant',
+    description: 'Chat with an assistant that reads your resume and suggests real improvements.',
+  },
+  {
+    icon: Target,
+    title: 'ATS keyword matching',
+    description: 'Paste a job description and get concrete, explained suggestions to match it.',
+  },
+]
+
 export function HomePage() {
-  const { data, isPending, isError } = useQuery({
-    queryKey: ['health'],
-    queryFn: () => apiFetch<{ status: string }>('/api/v1/health'),
-  })
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (!isLoading && isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background p-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Resume Builder — Foundation</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Backend health check: {isPending && 'checking...'}
-            {isError && <span className="text-destructive">unreachable</span>}
-            {data && <span className="font-medium text-foreground">{data.status}</span>}
-          </p>
-          <Button onClick={() => window.location.reload()}>Re-check</Button>
-          <div className="flex justify-center gap-4 text-sm">
-            {isAuthenticated ? (
-              <Link to="/dashboard" className="underline">
-                Dashboard
-              </Link>
-            ) : (
-              <>
-                <Link to="/login" className="underline">
-                  Log in
-                </Link>
-                <Link to="/register" className="underline">
-                  Register
-                </Link>
-              </>
-            )}
+    <div className="flex min-h-svh flex-col items-center justify-center gap-16 bg-background px-6 py-16">
+      <div className="max-w-xl text-center">
+        <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          Resume Builder
+        </h1>
+        <p className="mt-4 text-lg text-muted-foreground">
+          Write your resume in LaTeX with a live preview, and get AI suggestions tailored to the job
+          you're applying for.
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Button asChild size="lg">
+            <RouterLink to="/register">Get started</RouterLink>
+          </Button>
+          <Button asChild variant="outline" size="lg">
+            <RouterLink to="/login">Log in</RouterLink>
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid max-w-4xl gap-8 sm:grid-cols-3">
+        {FEATURES.map(({ icon: Icon, title, description }) => (
+          <div key={title} className="flex flex-col items-center text-center">
+            <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Icon className="size-5" />
+            </div>
+            <h2 className="mt-3 text-sm font-medium text-foreground">{title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
     </div>
   )
 }

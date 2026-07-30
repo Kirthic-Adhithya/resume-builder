@@ -46,3 +46,10 @@ class ResumeVersionResponse(BaseModel):
     id: uuid.UUID
     title: str
     created_at: datetime
+
+
+class CompileRequest(BaseModel):
+    # Optional: lets the Editor compile exactly what's in Monaco right now, without
+    # waiting for an autosave round-trip to finish first. Omitted (or no body at all)
+    # falls back to compiling the last-saved content — what /export/pdf always wants.
+    content: str | None = None

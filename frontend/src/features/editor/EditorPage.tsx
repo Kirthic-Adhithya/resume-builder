@@ -19,7 +19,7 @@ import {
   useUpdateResumeContent,
 } from '@/features/editor/api'
 
-const AUTOSAVE_DELAY_MS = 1500
+const AUTOSAVE_DELAY_MS = 1000
 
 export function EditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -48,10 +48,10 @@ export function EditorPage() {
     }
   }, [resume])
 
-  const runCompile = async () => {
+  const runCompile = async (overrideContent?: string) => {
     setCompileError(null)
     try {
-      const blob = await compile.mutateAsync()
+      const blob = await compile.mutateAsync(overrideContent)
       setPdfUrl((previous) => {
         if (previous) URL.revokeObjectURL(previous)
         return URL.createObjectURL(blob)
@@ -66,13 +66,18 @@ export function EditorPage() {
   // and on version-restore, both of which would then autosave+compile immediately even
   // though the user hadn't typed anything. Keying off onChange means this only ever
   // fires for genuine user edits.
+  //
+  // Save and compile fire together, not chained — compile takes the just-typed content
+  // directly (see useCompileResume) instead of re-reading whatever got persisted, so it
+  // doesn't have to wait for the save round-trip to finish first.
   function handleEditorChange(value: string | undefined) {
     const next = value ?? ''
     setContent(next)
 
     if (autosaveTimeout.current) clearTimeout(autosaveTimeout.current)
     autosaveTimeout.current = setTimeout(() => {
-      updateContent.mutate(next, { onSuccess: () => void runCompile() })
+      updateContent.mutate(next)
+      void runCompile(next)
     }, AUTOSAVE_DELAY_MS)
   }
 
@@ -90,9 +95,9 @@ export function EditorPage() {
 
   return (
     <div className="flex h-[calc(100svh-57px)] flex-col">
-      <div className="flex items-center justify-between border-b px-4 py-2">
+      <div className="flex items-center justify-between border-b bg-card px-4 py-2">
         <div className="flex items-center gap-3">
-          <Link to="/dashboard" className="text-sm underline">
+          <Link to="/dashboard" className="text-sm text-muted-foreground hover:underline">
             &larr; Dashboard
           </Link>
           <h1 className="font-medium">{resume?.title}</h1>
@@ -163,9 +168,23 @@ export function EditorPage() {
           language="latex"
           value={content}
           onChange={handleEditorChange}
-          options={{ minimap: { enabled: false }, fontSize: 13, wordWrap: 'on' }}
+          theme="vs-dark"
+          options={{
+            minimap: { enabled: false },
+            fontSize: 13,
+            wordWrap: 'on',
+            padding: { top: 12 },
+          }}
         />
-        <div className="border-l">
+        <div className="relative border-l bg-muted/30">
+          {/* Kept as an overlay (not swapped for a full-screen spinner) so the
+              previous PDF stays visible while a new one compiles — replacing it with a
+              blank loading state on every keystroke reads as slower than it is. */}
+          {compile.isPending && (
+            <div className="absolute inset-x-0 top-0 z-10 bg-primary/90 px-3 py-1 text-center text-xs text-primary-foreground">
+              Compiling...
+            </div>
+          )}
           {compileError ? (
             <pre className="h-full overflow-auto whitespace-pre-wrap p-4 text-sm text-destructive">
               {compileError}
@@ -174,7 +193,7 @@ export function EditorPage() {
             <iframe src={pdfUrl} title="Resume preview" className="h-full w-full" />
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Click "Compile" to see a preview.
+              Start typing, or click "Compile" to see a preview.
             </div>
           )}
         </div>

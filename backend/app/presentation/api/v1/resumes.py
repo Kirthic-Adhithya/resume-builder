@@ -26,6 +26,7 @@ from app.presentation.dependencies import (
     get_resume_version_repository,
 )
 from app.presentation.schemas.resume import (
+    CompileRequest,
     ResumeCreateRequest,
     ResumeDetailResponse,
     ResumeListResponse,
@@ -111,8 +112,12 @@ async def compile_resume(
     current_user: Annotated[User, Depends(get_current_user)],
     resume_repo: Annotated[ResumeRepository, Depends(get_resume_repository)],
     compiler: Annotated[LatexCompiler, Depends(get_latex_compiler)],
+    data: CompileRequest | None = None,
 ) -> Response:
-    pdf_bytes = await CompileResume(resume_repo, compiler).execute(current_user.id, resume_id)
+    content_override = data.content if data is not None else None
+    pdf_bytes = await CompileResume(resume_repo, compiler).execute(
+        current_user.id, resume_id, content_override
+    )
     return Response(content=pdf_bytes, media_type="application/pdf")
 
 

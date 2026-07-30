@@ -59,6 +59,7 @@ export function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-8">
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-foreground">My Resumes</h1>
       <div className="mb-6 flex items-center justify-between gap-4">
         <Input
           placeholder="Search resumes..."

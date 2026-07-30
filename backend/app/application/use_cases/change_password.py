@@ -10,9 +10,7 @@ class ChangePassword:
         self._user_repo = user_repo
         self._password_hasher = password_hasher
 
-    async def execute(
-        self, user_id: uuid.UUID, current_password: str, new_password: str
-    ) -> None:
+    async def execute(self, user_id: uuid.UUID, current_password: str, new_password: str) -> None:
         user = await self._user_repo.get_by_id(user_id)
         if user is None:
             raise NotFoundError("User not found")

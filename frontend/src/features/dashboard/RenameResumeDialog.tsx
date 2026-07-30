@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -51,7 +52,16 @@ export function RenameResumeDialog({
 
   function onSubmit(values: RenameResumeValues) {
     if (!resume) return
-    renameResume.mutate({ id: resume.id, title: values.title }, { onSuccess: () => onClose() })
+    renameResume.mutate(
+      { id: resume.id, title: values.title },
+      {
+        onSuccess: () => {
+          toast.success('Resume renamed')
+          onClose()
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : 'Rename failed'),
+      },
+    )
   }
 
   return (

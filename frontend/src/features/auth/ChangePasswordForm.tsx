@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -29,7 +30,12 @@ export function ChangePasswordForm() {
   })
 
   function onSubmit(values: ChangePasswordValues) {
-    changePassword.mutate(values, { onSuccess: () => form.reset() })
+    changePassword.mutate(values, {
+      onSuccess: () => {
+        toast.success('Password updated')
+        form.reset()
+      },
+    })
   }
 
   return (
@@ -68,9 +74,7 @@ export function ChangePasswordForm() {
               : 'Could not change password'}
           </p>
         )}
-        {changePassword.isSuccess && (
-          <p className="text-sm text-green-600 dark:text-green-500">Password updated.</p>
-        )}
+        {changePassword.isSuccess && <p className="text-sm text-success">Password updated.</p>}
         <Button type="submit" disabled={changePassword.isPending}>
           {changePassword.isPending ? 'Updating...' : 'Change password'}
         </Button>

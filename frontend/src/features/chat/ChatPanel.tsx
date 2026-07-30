@@ -1,11 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { Sparkles, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { streamChatMessage, useChatHistory } from '@/features/chat/api'
 
-export function ChatPanel({ resumeId }: { resumeId: string }) {
+export function ChatPanel({ resumeId, onClose }: { resumeId: string; onClose?: () => void }) {
   const { data: history } = useChatHistory(resumeId)
   const queryClient = useQueryClient()
 
@@ -47,7 +48,22 @@ export function ChatPanel({ resumeId }: { resumeId: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col border-l">
+    <div className="flex h-full flex-col">
+      <div className="flex h-11 shrink-0 items-center gap-1.5 border-b border-border px-3">
+        <Sparkles className="size-3.5 text-primary" />
+        <span className="text-sm font-medium">AI Assistant</span>
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto size-7"
+            onClick={onClose}
+            aria-label="Close AI assistant"
+          >
+            <X className="size-3.5" />
+          </Button>
+        )}
+      </div>
       <div className="flex-1 space-y-3 overflow-auto p-3">
         {history?.length === 0 && !pendingUserMessage && (
           <p className="text-sm text-muted-foreground">

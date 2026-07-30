@@ -1,14 +1,22 @@
 import Editor from '@monaco-editor/react'
+import { ChevronDown, Cloud, Download, History, Play, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
+import { Brand } from '@/components/brand'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { Separator } from '@/components/ui/separator'
+import { ThemeToggle } from '@/app/ThemeToggle'
 import { ChatPanel } from '@/features/chat/ChatPanel'
 import {
   downloadResumeExport,
@@ -57,7 +65,9 @@ export function EditorPage() {
         return URL.createObjectURL(blob)
       })
     } catch (err) {
-      setCompileError(err instanceof Error ? err.message : 'Compilation failed')
+      const message = err instanceof Error ? err.message : 'Compilation failed'
+      setCompileError(message)
+      toast.error(message)
     }
   }
 
@@ -76,7 +86,10 @@ export function EditorPage() {
 
     if (autosaveTimeout.current) clearTimeout(autosaveTimeout.current)
     autosaveTimeout.current = setTimeout(() => {
-      updateContent.mutate(next)
+      updateContent.mutate(next, {
+        onError: (err) =>
+          toast.error(err instanceof Error ? err.message : 'Failed to save changes'),
+      })
       void runCompile(next)
     }, AUTOSAVE_DELAY_MS)
   }
@@ -94,25 +107,39 @@ export function EditorPage() {
   }
 
   return (
-    <div className="flex h-[calc(100svh-57px)] flex-col">
-      <div className="flex items-center justify-between border-b bg-card px-4 py-2">
-        <div className="flex items-center gap-3">
-          <Link to="/dashboard" className="text-sm text-muted-foreground hover:underline">
-            &larr; Dashboard
-          </Link>
-          <h1 className="font-medium">{resume?.title}</h1>
-          {updateContent.isPending && (
-            <span className="text-xs text-muted-foreground">Saving...</span>
-          )}
+    <div className="flex h-[calc(100svh-57px)] flex-col overflow-hidden bg-background">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-background px-3">
+        <Link to="/dashboard" aria-label="Back to dashboard">
+          <Brand showText={false} />
+        </Link>
+        <Separator orientation="vertical" className="mx-1 h-5" />
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{resume?.title}</div>
         </div>
-        <div className="flex items-center gap-2">
+        <span className="ml-2 hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+          <Cloud className="size-3.5" />
+          {updateContent.isPending ? 'Saving…' : 'All changes saved'}
+        </span>
+
+        <div className="ml-auto flex items-center gap-1.5">
+          <Button
+            size="sm"
+            className="h-8"
+            onClick={() => void runCompile()}
+            disabled={compile.isPending}
+          >
+            <Play className="size-3.5" /> {compile.isPending ? 'Compiling...' : 'Compile'}
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                Version history
+              <Button variant="outline" size="sm" className="h-8">
+                <History className="size-3.5" /> History <ChevronDown className="size-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Version history</DropdownMenuLabel>
+              <DropdownMenuSeparator />
               {versions.data?.length === 0 && (
                 <div className="px-2 py-1.5 text-sm text-muted-foreground">
                   No saved versions yet.
@@ -132,10 +159,13 @@ export function EditorPage() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                Export
+              <Button variant="outline" size="sm" className="h-8">
+                <Download className="size-3.5" />
+                <span className="hidden sm:inline">Export</span>
+                <ChevronDown className="size-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -150,54 +180,69 @@ export function EditorPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            size="sm"
-            variant={isChatOpen ? 'secondary' : 'outline'}
-            onClick={() => setIsChatOpen((open) => !open)}
-          >
-            AI Assistant
-          </Button>
-          <Button size="sm" onClick={() => void runCompile()} disabled={compile.isPending}>
-            {compile.isPending ? 'Compiling...' : 'Compile'}
-          </Button>
-        </div>
-      </div>
 
-      <div className={`grid flex-1 overflow-hidden ${isChatOpen ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <Editor
-          language="latex"
-          value={content}
-          onChange={handleEditorChange}
-          theme="vs-dark"
-          options={{
-            minimap: { enabled: false },
-            fontSize: 13,
-            wordWrap: 'on',
-            padding: { top: 12 },
-          }}
-        />
-        <div className="relative border-l bg-muted/30">
-          {/* Kept as an overlay (not swapped for a full-screen spinner) so the
-              previous PDF stays visible while a new one compiles — replacing it with a
-              blank loading state on every keystroke reads as slower than it is. */}
-          {compile.isPending && (
-            <div className="absolute inset-x-0 top-0 z-10 bg-primary/90 px-3 py-1 text-center text-xs text-primary-foreground">
-              Compiling...
-            </div>
-          )}
-          {compileError ? (
-            <pre className="h-full overflow-auto whitespace-pre-wrap p-4 text-sm text-destructive">
-              {compileError}
-            </pre>
-          ) : pdfUrl ? (
-            <iframe src={pdfUrl} title="Resume preview" className="h-full w-full" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Start typing, or click "Compile" to see a preview.
-            </div>
-          )}
+          <Button
+            variant={isChatOpen ? 'secondary' : 'ghost'}
+            size="icon"
+            className="size-8"
+            onClick={() => setIsChatOpen((open) => !open)}
+            aria-label="Toggle AI assistant"
+            aria-pressed={isChatOpen}
+          >
+            <Sparkles className="size-4" />
+          </Button>
+
+          <ThemeToggle />
         </div>
-        {isChatOpen && <ChatPanel resumeId={id} />}
+      </header>
+
+      <div className="flex min-h-0 flex-1">
+        <ResizablePanelGroup className="min-h-0 flex-1">
+          <ResizablePanel defaultSize="50%" minSize="25%">
+            <Editor
+              language="latex"
+              value={content}
+              onChange={handleEditorChange}
+              theme="vs-dark"
+              options={{
+                minimap: { enabled: false },
+                fontSize: 13,
+                wordWrap: 'on',
+                padding: { top: 12 },
+              }}
+            />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize="50%" minSize="25%">
+            <div className="relative h-full bg-muted/30">
+              {/* Kept as an overlay (not swapped for a full-screen spinner) so the
+                  previous PDF stays visible while a new one compiles — replacing it with a
+                  blank loading state on every keystroke reads as slower than it is. */}
+              {compile.isPending && (
+                <div className="absolute inset-x-0 top-0 z-10 bg-primary/90 px-3 py-1 text-center text-xs text-primary-foreground">
+                  Compiling...
+                </div>
+              )}
+              {compileError ? (
+                <pre className="h-full overflow-auto whitespace-pre-wrap p-4 text-sm text-destructive">
+                  {compileError}
+                </pre>
+              ) : pdfUrl ? (
+                <iframe src={pdfUrl} title="Resume preview" className="h-full w-full" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Start typing, or click "Compile" to see a preview.
+                </div>
+              )}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+
+        {isChatOpen && (
+          <div className="w-[344px] shrink-0 border-l border-border">
+            <ChatPanel resumeId={id} onClose={() => setIsChatOpen(false)} />
+          </div>
+        )}
       </div>
     </div>
   )

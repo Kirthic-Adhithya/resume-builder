@@ -30,6 +30,9 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /api/v1/health
+    # Migrations run as part of the container's own CMD (see backend/Dockerfile)
+    # rather than via Render's `preDeployCommand` — that field is a paid-plan-only
+    # feature, and this project targets the free tier.
     envVars:
       - key: ENVIRONMENT
         value: production

@@ -59,9 +59,15 @@ COPY . .
 
 EXPOSE 8000
 
-# Shell form (not exec-form JSON array) so ${PORT:-8000} actually expands — Render
-# and most PaaS hosts inject PORT at runtime and expect the process to bind to it,
-# with 8000 as a sane local-Docker-run fallback. No --reload here: that's dev-only
-# file-watching, and local dev instead overrides this CMD via docker-compose.yaml's
-# `command:` (bind-mounted source + --reload) rather than needing two Dockerfiles.
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Shell form (not exec-form JSON array) so ${PORT:-8000} and the && chain actually
+# work — Render and most PaaS hosts inject PORT at runtime and expect the process to
+# bind to it, with 8000 as a sane local-Docker-run fallback. No --reload here: that's
+# dev-only file-watching, and local dev instead overrides this CMD via
+# docker-compose.yaml's `command:` (bind-mounted source + --reload).
+#
+# `alembic upgrade head` runs on every container start, not just the first deploy —
+# free-tier Render has no paid-only "pre-deploy command" step, so this is the
+# free-tier-compatible way to guarantee migrations are applied before the app starts
+# serving traffic. It's a no-op (one quick "what revision are we at" query) once
+# already at head, so re-running it on every spin-up-from-idle is harmless.
+CMD alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

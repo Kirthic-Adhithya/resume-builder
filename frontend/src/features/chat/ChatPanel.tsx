@@ -1,12 +1,47 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Sparkles, X } from 'lucide-react'
+import { FileCode2, Sparkles, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { streamChatMessage, useChatHistory } from '@/features/chat/api'
 
-export function ChatPanel({ resumeId, onClose }: { resumeId: string; onClose?: () => void }) {
+// Only matches once the closing fence has actually streamed in — while a reply is
+// still mid-stream (opening ```latex present, no closing ``` yet), this returns no
+// match and the partial text just renders as plain prose, so a suggestion card never
+// flashes in a broken/incomplete state.
+const LATEX_FENCE_RE = /```latex\n([\s\S]*?)```/
+
+function extractSuggestion(content: string): {
+  before: string
+  suggestion: string | null
+  after: string
+} {
+  const match = LATEX_FENCE_RE.exec(content)
+  if (!match) return { before: content, suggestion: null, after: '' }
+  return {
+    before: content.slice(0, match.index).trim(),
+    suggestion: match[1].trim(),
+    after: content.slice(match.index + match[0].length).trim(),
+  }
+}
+
+// Key used for the in-flight streaming reply's accept/reject state — there's only
+// ever one streaming message at a time, so a constant key is enough. Once the reply
+// finishes and history refetches, it's replaced by a persisted message with a real
+// id; that fresh render starts without accept/reject state, which is an accepted
+// trade-off (ephemeral UI state, not worth persisting to the backend for this).
+const STREAMING_KEY = '__streaming__'
+
+export function ChatPanel({
+  resumeId,
+  onClose,
+  onApplySuggestion,
+}: {
+  resumeId: string
+  onClose?: () => void
+  onApplySuggestion?: (content: string) => void
+}) {
   const { data: history } = useChatHistory(resumeId)
   const queryClient = useQueryClient()
 
@@ -15,6 +50,9 @@ export function ChatPanel({ resumeId, onClose }: { resumeId: string; onClose?: (
   const [streamingReply, setStreamingReply] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [suggestionStatus, setSuggestionStatus] = useState<
+    Record<string, 'applied' | 'dismissed'>
+  >({})
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -72,10 +110,33 @@ export function ChatPanel({ resumeId, onClose }: { resumeId: string; onClose?: (
           </p>
         )}
         {history?.map((message) => (
-          <ChatBubble key={message.id} role={message.role} content={message.content} />
+          <ChatBubble
+            key={message.id}
+            role={message.role}
+            content={message.content}
+            suggestionKey={message.id}
+            status={suggestionStatus[message.id]}
+            onAccept={(content) => {
+              onApplySuggestion?.(content)
+              setSuggestionStatus((s) => ({ ...s, [message.id]: 'applied' }))
+            }}
+            onReject={() => setSuggestionStatus((s) => ({ ...s, [message.id]: 'dismissed' }))}
+          />
         ))}
         {pendingUserMessage && <ChatBubble role="user" content={pendingUserMessage} />}
-        {streamingReply !== null && <ChatBubble role="assistant" content={streamingReply || '…'} />}
+        {streamingReply !== null && (
+          <ChatBubble
+            role="assistant"
+            content={streamingReply || '…'}
+            suggestionKey={STREAMING_KEY}
+            status={suggestionStatus[STREAMING_KEY]}
+            onAccept={(content) => {
+              onApplySuggestion?.(content)
+              setSuggestionStatus((s) => ({ ...s, [STREAMING_KEY]: 'applied' }))
+            }}
+            onReject={() => setSuggestionStatus((s) => ({ ...s, [STREAMING_KEY]: 'dismissed' }))}
+          />
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
         <div ref={bottomRef} />
       </div>
@@ -100,17 +161,65 @@ export function ChatPanel({ resumeId, onClose }: { resumeId: string; onClose?: (
   )
 }
 
-function ChatBubble({ role, content }: { role: 'user' | 'assistant'; content: string }) {
+function bubbleClassName(role: 'user' | 'assistant') {
+  return (
+    'inline-block max-w-[85%] rounded-lg px-3 py-2 text-left text-sm whitespace-pre-wrap ' +
+    (role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground')
+  )
+}
+
+function ChatBubble({
+  role,
+  content,
+  suggestionKey,
+  status,
+  onAccept,
+  onReject,
+}: {
+  role: 'user' | 'assistant'
+  content: string
+  suggestionKey?: string
+  status?: 'applied' | 'dismissed'
+  onAccept?: (content: string) => void
+  onReject?: () => void
+}) {
+  const { before, suggestion, after } =
+    role === 'assistant' ? extractSuggestion(content) : { before: content, suggestion: null, after: '' }
+
   return (
     <div className={role === 'user' ? 'text-right' : 'text-left'}>
-      <div
-        className={
-          'inline-block max-w-[85%] rounded-lg px-3 py-2 text-left text-sm whitespace-pre-wrap ' +
-          (role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground')
-        }
-      >
-        {content}
-      </div>
+      {before && <div className={bubbleClassName(role)}>{before}</div>}
+      {suggestion && (
+        <div
+          key={suggestionKey}
+          className="mt-2 w-full max-w-[95%] rounded-lg border border-border bg-card text-left shadow-sm"
+        >
+          <div className="flex items-center gap-1.5 border-b border-border px-3 py-1.5">
+            <FileCode2 className="size-3.5 text-primary" />
+            <span className="text-xs font-medium">Suggested revision</span>
+          </div>
+          <pre className="max-h-48 overflow-auto p-2 font-mono text-xs whitespace-pre-wrap text-muted-foreground">
+            {suggestion}
+          </pre>
+          <div className="flex items-center gap-2 border-t border-border p-2">
+            {status === 'applied' ? (
+              <span className="text-xs text-success">Applied to editor</span>
+            ) : status === 'dismissed' ? (
+              <span className="text-xs text-muted-foreground">Dismissed</span>
+            ) : (
+              <>
+                <Button size="sm" className="h-7" onClick={() => onAccept?.(suggestion)}>
+                  Accept
+                </Button>
+                <Button size="sm" variant="outline" className="h-7" onClick={() => onReject?.()}>
+                  Reject
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {after && <div className={`${bubbleClassName(role)} mt-2`}>{after}</div>}
     </div>
   )
 }

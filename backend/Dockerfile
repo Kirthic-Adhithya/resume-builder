@@ -59,4 +59,9 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Shell form (not exec-form JSON array) so ${PORT:-8000} actually expands — Render
+# and most PaaS hosts inject PORT at runtime and expect the process to bind to it,
+# with 8000 as a sane local-Docker-run fallback. No --reload here: that's dev-only
+# file-watching, and local dev instead overrides this CMD via docker-compose.yaml's
+# `command:` (bind-mounted source + --reload) rather than needing two Dockerfiles.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

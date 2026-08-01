@@ -7,6 +7,7 @@ AttributeError three requests into production.
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +17,18 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     database_url: str
+
+    @field_validator("database_url")
+    @classmethod
+    def _use_asyncpg_driver(cls, value: str) -> str:
+        # Managed Postgres providers (e.g. Render) hand out a bare `postgres://` or
+        # `postgresql://` URL. SQLAlchemy's async engine requires an async-capable
+        # driver in the scheme, and this project only installs asyncpg (no
+        # psycopg2) — without this rewrite, create_async_engine() fails outright.
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix) and "+asyncpg" not in value:
+                return "postgresql+asyncpg://" + value[len(prefix) :]
+        return value
 
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"

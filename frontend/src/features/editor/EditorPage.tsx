@@ -240,7 +240,19 @@ export function EditorPage() {
 
         {isChatOpen && (
           <div className="w-[344px] shrink-0 border-l border-border">
-            <ChatPanel resumeId={id} onClose={() => setIsChatOpen(false)} />
+            <ChatPanel
+              resumeId={id}
+              onClose={() => setIsChatOpen(false)}
+              onApplySuggestion={(suggested) => {
+                setContent(suggested)
+                updateContent.mutate(suggested, {
+                  onSuccess: () => toast.success('Suggestion applied'),
+                  onError: (err) =>
+                    toast.error(err instanceof Error ? err.message : 'Failed to save changes'),
+                })
+                void runCompile(suggested)
+              }}
+            />
           </div>
         )}
       </div>

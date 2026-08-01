@@ -17,7 +17,9 @@ learning project, following Clean Architecture end to end.
 - **Version history** — every saved change is snapshotted, with a retention policy (last
   5 versions, or anything from the last hour) so history doesn't grow unbounded
 - **AI assistant** — a streaming chat panel, scoped to the current resume, for rewrite
-  suggestions, keyword matching, and STAR-format bullet points
+  suggestions, keyword matching, and STAR-format bullet points. Rewrite suggestions
+  show up as an accept/reject card — Accept applies the suggestion straight to the
+  editor (and saves + recompiles), Reject just dismisses it
 - **Export** — download as PDF, raw LaTeX (`.tex`), or a JSON backup
 - **Settings** — light/dark theme, change password
 
@@ -31,7 +33,8 @@ learning project, following Clean Architecture end to end.
 - **Architecture:** Clean Architecture (domain / application / infrastructure /
   presentation), Repository Pattern via Python `Protocol`s, dependency injection via
   FastAPI `Depends()`
-- **Infra:** Docker Compose (Postgres, FastAPI backend, Vite dev server)
+- **Infra:** Docker Compose for local dev (Postgres, FastAPI backend, Vite dev
+  server); deploys to Render via `render.yaml` (see Deployment below)
 
 ## Quick start
 
@@ -69,6 +72,32 @@ frontend/
     components/ui/   # shadcn/ui primitives
     lib/             # api client, auth token storage, theme, template catalog
 ```
+
+## Deployment
+
+Deploys to [Render](https://render.com) via the `render.yaml` blueprint at the repo
+root — one file stands up the backend (Docker web service), the frontend (static
+site), and a Postgres database together.
+
+1. Push this repo to GitHub (if it isn't already).
+2. On Render: **New > Blueprint**, point it at the repo. Render reads `render.yaml`
+   and shows you the three resources it's about to create.
+3. The only manual step: paste your `GROQ_API_KEY` in when prompted (it's excluded
+   from the blueprint on purpose — `sync: false` — so it's never committed to the repo).
+   Everything else (`JWT_SECRET_KEY`, the database connection string, CORS origins) is
+   wired up automatically.
+4. Click **Apply**. First deploy takes a few minutes (the backend image installs
+   Tectonic and warms up its LaTeX bundle, same as the local Docker build).
+
+**Two things worth knowing about the free tier** (confirmed against Render's current
+docs while setting this up):
+- Free web services spin down after 15 minutes of inactivity — the first request
+  after a while takes ~1 minute to wake back up. Fine for a portfolio demo, just
+  don't expect an instant load on the first click.
+- **Free Postgres databases expire 30 days after creation** (14-day grace period,
+  then permanent deletion). If you want the live demo to keep working long-term,
+  you'll need to recreate the database (and re-run `alembic upgrade head`) roughly
+  every 30–40 days, or upgrade to a paid Postgres plan.
 
 ## Project status
 

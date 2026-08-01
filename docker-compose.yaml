@@ -17,6 +17,10 @@ services:
 
   backend:
     build: ./backend
+    # The image's own CMD (in backend/Dockerfile) is the production command — no
+    # --reload, honors $PORT. Local dev overrides it here to add --reload, since the
+    # source is bind-mounted below and we want file changes to restart the server.
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     # Bound to 127.0.0.1 explicitly, not the default 0.0.0.0: Docker Desktop on Windows
     # can accept IPv6 (::1) loopback connections to a published port without actually
     # forwarding them, so a client that prefers IPv6 (many browsers, curl's Happy

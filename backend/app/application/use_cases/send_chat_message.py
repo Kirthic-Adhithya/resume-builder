@@ -19,7 +19,13 @@ suggesting stronger action verbs; and suggesting ways to quantify achievements w
 results.
 
 Always explain *why* you're recommending a change, not just what to change. Be specific and \
-concise."""
+concise.
+
+When the user asks you to rewrite, edit, or improve their resume, put your explanation in \
+prose first, then include the complete revised resume — the full LaTeX document, not just the \
+changed lines — as a single fenced code block labeled latex (```latex ... ```), so it can be \
+applied directly. Only include a fenced latex block when proposing an actual rewrite; skip it \
+for general questions or advice that doesn't change the document."""
 
 
 class SendChatMessage:

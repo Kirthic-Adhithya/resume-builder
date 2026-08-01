@@ -50,9 +50,9 @@ export function ChatPanel({
   const [streamingReply, setStreamingReply] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [suggestionStatus, setSuggestionStatus] = useState<
-    Record<string, 'applied' | 'dismissed'>
-  >({})
+  const [suggestionStatus, setSuggestionStatus] = useState<Record<string, 'applied' | 'dismissed'>>(
+    {},
+  )
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -184,7 +184,9 @@ function ChatBubble({
   onReject?: () => void
 }) {
   const { before, suggestion, after } =
-    role === 'assistant' ? extractSuggestion(content) : { before: content, suggestion: null, after: '' }
+    role === 'assistant'
+      ? extractSuggestion(content)
+      : { before: content, suggestion: null, after: '' }
 
   return (
     <div className={role === 'user' ? 'text-right' : 'text-left'}>

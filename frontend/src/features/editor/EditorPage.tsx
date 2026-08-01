@@ -214,7 +214,7 @@ export function EditorPage() {
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize="50%" minSize="25%">
-            <div className="relative h-full bg-muted/30">
+            <div className="relative h-full bg-background">
               {/* Kept as an overlay (not swapped for a full-screen spinner) so the
                   previous PDF stays visible while a new one compiles — replacing it with a
                   blank loading state on every keystroke reads as slower than it is. */}
@@ -228,7 +228,15 @@ export function EditorPage() {
                   {compileError}
                 </pre>
               ) : pdfUrl ? (
-                <iframe src={pdfUrl} title="Resume preview" className="h-full w-full" />
+                // #toolbar=0&navpanes=0 hides Chrome's built-in PDF viewer chrome, and
+                // view=FitH scales the page to the pane's width instead of the viewer's
+                // default "automatic zoom" (which leaves the page small with a lot of
+                // grey backdrop around it in a narrow split-pane layout).
+                <iframe
+                  src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`}
+                  title="Resume preview"
+                  className="h-full w-full"
+                />
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                   Start typing, or click "Compile" to see a preview.

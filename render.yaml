@@ -10,10 +10,14 @@
 # prompt you to paste it in yourself during blueprint setup rather than reading it
 # from this file — it never gets committed to the repo.
 #
-# Service names below determine the predictable *.onrender.com URLs referenced in
-# each other's env vars. If a name is already taken, Render appends a random suffix
-# to make it unique — if that happens, update CORS_ORIGINS (backend) and
-# VITE_API_BASE_URL (frontend) in the Render dashboard to match the real assigned URLs.
+# IMPORTANT: CORS_ORIGINS and VITE_API_BASE_URL below must be the REAL assigned
+# *.onrender.com URLs, not guesses — Render re-syncs `value:`-type env vars from
+# this file on every blueprint deploy (push to the connected branch), which will
+# silently overwrite any manual fix made in the dashboard. If either service's name
+# gets a random suffix appended (because the plain name was already taken by another
+# Render user — onrender.com subdomains are global, not per-account), update the
+# actual values below to match, not just in the dashboard, or the next push will
+# reset it and break CORS again.
 #
 # Render's free Postgres expires 30 days after creation (14-day grace period, then
 # deleted) — see README.md's Deployment section for what that means day to day.
@@ -45,7 +49,7 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: CORS_ORIGINS
-        value: https://resume-builder-frontend.onrender.com
+        value: https://resume-builder-frontend-4j43.onrender.com
 
   - type: web
     name: resume-builder-frontend
@@ -58,4 +62,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://resume-builder-backend.onrender.com
+        value: https://resume-builder-backend-ghpy.onrender.com
